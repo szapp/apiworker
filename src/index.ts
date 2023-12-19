@@ -20,7 +20,7 @@ export default {
           `Response for request url: ${request.url} not present in cache. Fetching and caching request.`
         )
         // If not in cache, get it from origin
-        response = await downloadsRouter.handle(request)
+        response = await downloadsRouter.handle(request, env, ctx)
 
         // Must use Response constructor to inherit all of response's fields
         response = new Response(response.body, response)

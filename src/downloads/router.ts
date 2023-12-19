@@ -1,12 +1,8 @@
 import { Router } from 'itty-router'
-import { getGithub } from './github'
-import { getSpine } from './spine'
-import { getSteam } from './steam'
-import { getWog } from './wog'
 import { projects } from './projects'
-import { services, serviceMap } from './services'
+import { services, serviceMap, collect } from './services'
 
-const router = Router()
+const router = Router({ base: '/downloads' })
 
 function invalidRoute() {
   return new Response(
@@ -15,31 +11,25 @@ function invalidRoute() {
   })
 }
 
-async function collect(service: () => Promise<number>, values: string[] | string | number[] | number) {
-  const valueList: string[] | number[] = Array.isArray(values) ? values : [ values ]
+router.get('/:project/:service/:badge?', async (request, env, ctx) => {
+  const { project, service, badge = '' } = request.params
+  const url = new URL(request.url)
+  const { label = 'downloads', color = '#4c1', style = 'flat', logo = '', logoColor = '' } = Object.fromEntries(url.searchParams)
 
-  var summed: number = 0
-  for (var j = 0; j < valueList.length; j++)
-    summed += await service(valueList[j])
-
-  return summed
-}
-
-router.get('/downloads/:project/:service', async ({ params }) => {
-  if (params.project in projects) {
-    if (params.service in projects[params.project] || params.service === 'total') {
+  if (project in projects) {
+    if (service in projects[project] || service === 'total') {
       var count: number = 0
-      if (params.service == 'total')
+      if (service == 'total')
         for (var i = 0; i < services.length; i++) {
           count += await collect(
             serviceMap[services[i]],
-            projects[params.project][services[i]]
+            projects[project][services[i]]
           )
         }
       else
         count = await collect(
-          serviceMap[params.service],
-          projects[params.project][params.service]
+          serviceMap[service],
+          projects[project][service]
         )
 
       var message: string = ''
@@ -51,18 +41,24 @@ router.get('/downloads/:project/:service', async ({ params }) => {
         message = count
       }
 
-      var label: string = 'downloads'
-      var color: string = '#4c1'
-
-      const url = `https://img.shields.io/badge/${label}-${message}-${color.replace(/#/g, '')}`
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          Accept: 'image/svg+xml',
-        },
-      })
-      const content = await response.text()
-      return new Response(content, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' } })
+      // Return SVG or JSON
+      if (badge) {
+        const url = `https://img.shields.io/badge/${label}-${message}-${color.replace(/#/g, '')}?style=${style}&logo=${logo}&logoColor=${logoColor.replace(/#/g, '')}`
+        const response = await fetch(url, { headers: { Accept: 'image/svg+xml' } })
+        const content = await response.text()
+        return new Response(content, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' } })
+      } else {
+        const format = {
+          schemaVersion: 1,
+          label: label,
+          message: message,
+          color: color,
+          style: style,
+        };
+        logo && (format.logo = logo)
+        logoColor && (format.logoColor = logoColor)
+        return new Response(JSON.stringify(format), { headers: { 'Content-Type': 'application/json; charset=utf-8' }})
+      }
     }
   }
 
