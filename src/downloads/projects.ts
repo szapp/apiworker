@@ -1,7 +1,7 @@
 export const projects: { [key: string]: [ number | string ] } = {
   ninja: {
     github: 'szapp/Ninja',
-    spine: 141702,
+    spine: 144150,
     steam: [
       2786936496,
       2786910489,
@@ -10,17 +10,17 @@ export const projects: { [key: string]: [ number | string ] } = {
   },
   g1cp: {
     github: 'AmProsius/gothic-1-community-patch',
-    spine: 14296,
+    spine: 14683,
     steam: 2789245548,
     wog: 660,
   },
   gfa: {
     github: 'szapp/GothicFreeAim',
     spine: [
-      2805,
-      3621,
+      2854,
+      3647,
       920,
-      6737,
+      6886,
     ],
     steam: [
       2786959658,
