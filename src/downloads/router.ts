@@ -65,6 +65,19 @@ router.get('/:project/:service/:badge?', async (request, env, ctx) => {
   return invalidRoute()
 })
 
+router.get('/', async (request, env, ctx) => {
+	const url = new URL(request.url)
+  return new Response(
+    JSON.stringify({
+			downloads_url: `${url.origin}/downloads/{project_id}/{service_id}`,
+			badge_url: `${url.origin}/downloads/{project_id}/{service_id}/badge{?label,color,style,logo,logoColor}`,
+			service_ids: services.concat('total'),
+			project_ids: Object.keys(projects)
+		}),
+    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
+  })
+})
+
 // 404 for everything else
 router.all('*', invalidRoute)
 
