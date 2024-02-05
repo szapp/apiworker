@@ -4,7 +4,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
 
-    if (url.pathname.startsWith('/downloads/')) {
+    if (url.pathname === '/downloads' || url.pathname.startsWith('/downloads/')) {
       const cacheUrl = new URL(request.url)
 
       // Construct the cache key from the cache URL
@@ -39,12 +39,14 @@ export default {
       return response
     }
 
-		if (url.pathname === '/') {
-	    return new Response(
-	      JSON.stringify({ downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}` }),
-	      { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-	    })
-		}
+    if (url.pathname === '/') {
+      return new Response(
+        JSON.stringify({
+          downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}`
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
+      })
+    }
 
     return new Response(
       JSON.stringify({ message: 'Not Found' }),
