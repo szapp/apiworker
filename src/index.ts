@@ -39,6 +39,13 @@ export default {
       return response
     }
 
+		if (url.pathname === '/') {
+	    return new Response(
+	      JSON.stringify({ downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}` }),
+	      { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
+	    })
+		}
+
     return new Response(
       JSON.stringify({ message: 'Not Found' }),
       { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }
