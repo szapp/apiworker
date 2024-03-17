@@ -1,10 +1,12 @@
 import downloadsRouter from './downloads/router'
+import participantsRouter from './participants/router'
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
 
-    if (url.pathname === '/downloads' || url.pathname.startsWith('/downloads/')) {
+    if (url.pathname === '/downloads' || url.pathname.startsWith('/downloads/')
+    || url.pathname === '/participants' || url.pathname.startsWith('/participants/')) {
       const cacheUrl = new URL(request.url)
 
       // Construct the cache key from the cache URL
@@ -20,7 +22,11 @@ export default {
           `Response for request url: ${request.url} not present in cache. Fetching and caching request.`
         )
         // If not in cache, get it from origin
-        response = await downloadsRouter.handle(request, env, ctx)
+        if (url.pathname.startsWith('/downloads'))
+          response = await downloadsRouter.handle(request, env, ctx)
+        else if (url.pathname.startsWith('/participants')) {
+          response = await participantsRouter.handle(request, env, ctx)
+        }
 
         // Must use Response constructor to inherit all of response's fields
         response = new Response(response.body, response)
@@ -42,7 +48,8 @@ export default {
     if (url.pathname === '/') {
       return new Response(
         JSON.stringify({
-          downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}`
+          downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}`,
+          participants_url: `${url.origin}/participants/{project_id}/{service_id}{/svg}{?wog,exclude,max,columns,size}`,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
       })
