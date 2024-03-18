@@ -5,10 +5,10 @@ import { services, serviceMap, collect } from './services'
 const router = Router({ base: '/downloads' })
 
 function invalidRoute() {
-  return new Response(
-    JSON.stringify({ message: 'Not Found' }),
-    { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
-  )
+  return new Response(JSON.stringify({ message: 'Not Found' }), {
+    status: 404,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  })
 }
 
 router.get('/:project/:service/:badge?', async (request) => {
@@ -22,16 +22,9 @@ router.get('/:project/:service/:badge?', async (request) => {
       let count: number = 0
       if (service === 'total')
         for (let i = 0; i < services.length; i++) {
-          count += await collect(
-            serviceMap[services[i]],
-            projects[project][services[i]]
-          )
+          count += await collect(serviceMap[services[i]], projects[project][services[i]])
         }
-      else
-        count = await collect(
-          serviceMap[service],
-          projects[project][service]
-        )
+      else count = await collect(serviceMap[service], projects[project][service])
 
       let message: string = ''
       if (count > 1000 * 1000) {
@@ -49,7 +42,7 @@ router.get('/:project/:service/:badge?', async (request) => {
         const content = await response.text()
         return new Response(content, { headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' } })
       } else {
-        const format = {
+        const format: Record<string, string | number> = {
           schemaVersion: 1,
           label: label,
           message: message,
@@ -58,7 +51,7 @@ router.get('/:project/:service/:badge?', async (request) => {
         }
         if (logo) format.logo = logo
         if (logoColor) format.logoColor = logoColor
-        return new Response(JSON.stringify(format), { headers: { 'Content-Type': 'application/json; charset=utf-8' }})
+        return new Response(JSON.stringify(format), { headers: { 'Content-Type': 'application/json; charset=utf-8' } })
       }
     }
   }
@@ -73,9 +66,9 @@ router.get('/', async (request) => {
       downloads_url: `${url.origin}/downloads/{project_id}/{service_id}`,
       badge_url: `${url.origin}/downloads/{project_id}/{service_id}/badge{?label,color,style,logo,logoColor}`,
       service_ids: services.concat('total'),
-      project_ids: Object.keys(projects)
+      project_ids: Object.keys(projects),
     }),
-    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
   )
 })
 

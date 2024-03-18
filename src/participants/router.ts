@@ -6,10 +6,10 @@ import { services, serviceMap, collect, User, UserInfo } from './services'
 const router = Router({ base: '/participants' })
 
 function invalidRoute() {
-  return new Response(
-    JSON.stringify({ message: 'Not Found' }),
-    { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
-  )
+  return new Response(JSON.stringify({ message: 'Not Found' }), {
+    status: 404,
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+  })
 }
 
 router.get('/:project/:service/:svg?', async (request, env) => {
@@ -30,7 +30,9 @@ router.get('/:project/:service/:svg?', async (request, env) => {
 
       // Drop excluded entries
       if (typeof exclude !== 'undefined') {
-        const excl: string[] = decodeURI(exclude).replace(/\[|\]|"|'/g, '').split(',')
+        const excl: string[] = decodeURI(exclude)
+          .replace(/\[|\]|"|'/g, '')
+          .split(',')
         for (const name of excl) delete userSet[name]
       }
 
@@ -39,15 +41,9 @@ router.get('/:project/:service/:svg?', async (request, env) => {
 
       if (svg) {
         const svgData: string = await renderSvg(users, max && Number(max), columns && Number(columns), size && Number(size))
-        return new Response(
-          svgData,
-          { status: 200, headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' }}
-        )
+        return new Response(svgData, { status: 200, headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' } })
       } else {
-        return new Response(
-          JSON.stringify(users),
-          { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
-        )
+        return new Response(JSON.stringify(users), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } })
       }
     }
   }
@@ -62,9 +58,9 @@ router.get('/', async (request) => {
       participants_url: `${url.origin}/participants/{project_id}/{service_id}{?wog,exclude}`,
       svg_url: `${url.origin}/participants/{project_id}/{service_id}/svg{?wog,exclude,max,columns,size}`,
       service_ids: services.concat('total'),
-      project_ids: Object.keys(projects)
+      project_ids: Object.keys(projects),
     }),
-    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
   )
 })
 

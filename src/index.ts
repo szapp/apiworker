@@ -5,43 +5,37 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
 
-    if (url.pathname === '/downloads' || url.pathname.startsWith('/downloads/')
-    || url.pathname === '/participants' || url.pathname.startsWith('/participants/')) {
+    if (
+      url.pathname === '/downloads' ||
+      url.pathname.startsWith('/downloads/') ||
+      url.pathname === '/participants' ||
+      url.pathname.startsWith('/participants/')
+    ) {
       const cacheUrl = new URL(request.url)
-
-      // Construct the cache key from the cache URL
       const cacheKey = new Request(cacheUrl.toString(), request)
       const cache = caches.default
-
-      // Check whether the value is already available in the cache
-      // if not, you will need to fetch it from origin, and store it in the cache
       let response = await cache.match(cacheKey)
-
-      if (!response) {
-        console.log(
-          `Response for request url: ${request.url} not present in cache. Fetching and caching request.`
-        )
-        // If not in cache, get it from origin
-        if (url.pathname.startsWith('/downloads'))
-          response = await downloadsRouter.handle(request, env, ctx)
+      if (typeof response === 'undefined') {
+        console.log(`Response for request url: ${request.url} not present in cache. Fetching and caching request.`)
+        if (url.pathname.startsWith('/downloads')) response = await downloadsRouter.handle(request, env, ctx)
         else if (url.pathname.startsWith('/participants')) {
           response = await participantsRouter.handle(request, env, ctx)
         }
 
-        // Must use Response constructor to inherit all of response's fields
-        response = new Response(response.body, response)
+        if (typeof response === 'undefined') {
+          response = new Response(JSON.stringify({ message: 'Not Found' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json; charset=utf-8' },
+          })
+        } else {
+          response = new Response(response.body, response)
+        }
 
-        // Cache API respects Cache-Control headers. Setting s-max-age to 21600
-        // will limit the response to be in cache for 21600 seconds max
-
-        // Any changes made to the response here will be reflected in the cached value
-        response.headers.append('Cache-Control', 's-maxage=21600')
-
+        response.headers.append('Cache-Control', 's-maxage=21600') // In cache for 21600 seconds max
         ctx.waitUntil(cache.put(cacheKey, response.clone()))
       } else {
         console.log(`Cache hit for: ${request.url}.`)
       }
-
       return response
     }
 
@@ -51,13 +45,13 @@ export default {
           downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}`,
           participants_url: `${url.origin}/participants/{project_id}/{service_id}{/svg}{?wog,exclude,max,columns,size}`,
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+        { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
       )
     }
 
-    return new Response(
-      JSON.stringify({ message: 'Not Found' }),
-      { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
-    )
+    return new Response(JSON.stringify({ message: 'Not Found' }), {
+      status: 404,
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    })
   },
 }
