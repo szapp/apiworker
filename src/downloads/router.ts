@@ -7,11 +7,11 @@ const router = Router({ base: '/downloads' })
 function invalidRoute() {
   return new Response(
     JSON.stringify({ message: 'Not Found' }),
-    { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-  })
+    { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+  )
 }
 
-router.get('/:project/:service/:badge?', async (request, env, ctx) => {
+router.get('/:project/:service/:badge?', async (request) => {
   const { project, service, badge } = request.params
   const url = new URL(request.url)
   const { label = 'downloads', color = '#4c1', style = 'flat', logo = '', logoColor = '' } = Object.fromEntries(url.searchParams)
@@ -19,9 +19,9 @@ router.get('/:project/:service/:badge?', async (request, env, ctx) => {
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
-      var count: number = 0
-      if (service == 'total')
-        for (var i = 0; i < services.length; i++) {
+      let count: number = 0
+      if (service === 'total')
+        for (let i = 0; i < services.length; i++) {
           count += await collect(
             serviceMap[services[i]],
             projects[project][services[i]]
@@ -33,13 +33,13 @@ router.get('/:project/:service/:badge?', async (request, env, ctx) => {
           projects[project][service]
         )
 
-      var message: string = ''
+      let message: string = ''
       if (count > 1000 * 1000) {
         message = Math.round(count / 1000000) + 'm'
       } else if (count > 1000) {
         message = Math.round(count / 1000) + 'k'
       } else {
-        message = count
+        message = String(count)
       }
 
       // Return SVG or JSON
@@ -55,9 +55,9 @@ router.get('/:project/:service/:badge?', async (request, env, ctx) => {
           message: message,
           color: color,
           style: style,
-        };
-        logo && (format.logo = logo)
-        logoColor && (format.logoColor = logoColor)
+        }
+        if (logo) format.logo = logo
+        if (logoColor) format.logoColor = logoColor
         return new Response(JSON.stringify(format), { headers: { 'Content-Type': 'application/json; charset=utf-8' }})
       }
     }
@@ -66,7 +66,7 @@ router.get('/:project/:service/:badge?', async (request, env, ctx) => {
   return invalidRoute()
 })
 
-router.get('/', async (request, env, ctx) => {
+router.get('/', async (request) => {
   const url = new URL(request.url)
   return new Response(
     JSON.stringify({
@@ -75,8 +75,8 @@ router.get('/', async (request, env, ctx) => {
       service_ids: services.concat('total'),
       project_ids: Object.keys(projects)
     }),
-    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-  })
+    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+  )
 })
 
 // 404 for everything else

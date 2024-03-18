@@ -51,13 +51,13 @@ export default {
           downloads_url: `${url.origin}/downloads/{project_id}/{service_id}{/badge}{?label,color,style,logo,logoColor}`,
           participants_url: `${url.origin}/participants/{project_id}/{service_id}{/svg}{?wog,exclude,max,columns,size}`,
         }),
-        { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-      })
+        { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+      )
     }
 
     return new Response(
       JSON.stringify({ message: 'Not Found' }),
-      { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-    })
+      { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+    )
   },
 }

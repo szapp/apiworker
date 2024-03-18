@@ -1,5 +1,5 @@
 export async function getGithub(repo: string) {
-  var downloads: number = 0
+  let downloads: number = 0
 
   try {
     const response = await fetch(
@@ -13,17 +13,17 @@ export async function getGithub(repo: string) {
     )
     const json = await response.json()
 
-    for (var release of Object.values(json)) {
-      for (var assest of release.assets) {
+    for (const release of Object.values(json)) {
+      for (const assest of release.assets) {
         downloads += assest.download_count
       }
     }
   } catch (error) {
-    if (error instanceof TypeError && error.message == 'fetch failed')
+    if (error instanceof TypeError && error.message === 'fetch failed')
       console.warn('Could not reach github.com. Returning 0 downloads')
     else
       console.warn(`Unexpected error. Returning 0 downloads: ${error}`)
-    }
+  }
 
   return downloads
 }

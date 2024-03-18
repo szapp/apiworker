@@ -2,10 +2,11 @@ import { Buffer } from 'node:buffer'
 import { User } from './services'
 
 export async function renderSvg(users: User[], max: number = 100, columns: number = 12, size: number = 64): Promise<string> {
+  max = Math.max(1, Math.min(max, 100))
   const gap: number = 4
   const stroke: number = Math.max(1, size/64)
   const radius: number = size/2
-  const numUsers: number = users.length
+  const numUsers: number = Math.min(users.length, max)
   const totalWidth: number = (size+gap) * Math.min(numUsers, columns) - gap
   const totalHeight: number = (size+gap) * Math.ceil(numUsers / columns) - gap
 

@@ -8,11 +8,11 @@ const router = Router({ base: '/participants' })
 function invalidRoute() {
   return new Response(
     JSON.stringify({ message: 'Not Found' }),
-    { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-  })
+    { status: 404, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+  )
 }
 
-router.get('/:project/:service/:svg?', async (request, env, ctx) => {
+router.get('/:project/:service/:svg?', async (request, env) => {
   const { project, service, svg } = request.params
   const url = new URL(request.url)
   const { wog, exclude, max, columns, size } = Object.fromEntries(url.searchParams)
@@ -21,8 +21,8 @@ router.get('/:project/:service/:svg?', async (request, env, ctx) => {
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
-      let userSet: UserInfo = {}
-      if (service == 'total') {
+      const userSet: UserInfo = {}
+      if (service === 'total') {
         for (const serv of services) await collect(serviceMap[serv], projects[project][serv], userSet, options)
       } else {
         await collect(serviceMap[service], projects[project][service], userSet, options)
@@ -30,7 +30,7 @@ router.get('/:project/:service/:svg?', async (request, env, ctx) => {
 
       // Drop excluded entries
       if (typeof exclude !== 'undefined') {
-        const excl: string[] = decodeURI(exclude).replace(/\[|\]|\"|\'/g, '').split(',')
+        const excl: string[] = decodeURI(exclude).replace(/\[|\]|"|'/g, '').split(',')
         for (const name of excl) delete userSet[name]
       }
 
@@ -55,7 +55,7 @@ router.get('/:project/:service/:svg?', async (request, env, ctx) => {
   return invalidRoute()
 })
 
-router.get('/', async (request, env, ctx) => {
+router.get('/', async (request) => {
   const url = new URL(request.url)
   return new Response(
     JSON.stringify({
@@ -64,8 +64,8 @@ router.get('/', async (request, env, ctx) => {
       service_ids: services.concat('total'),
       project_ids: Object.keys(projects)
     }),
-    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }
-  })
+    { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' }}
+  )
 })
 
 // 404 for everything else

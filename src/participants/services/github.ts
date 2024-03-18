@@ -33,7 +33,8 @@ async function getUsersFetch(url: string, env: Env, users: UserInfo) : Promise<v
     }
 
     const linkHeader = response.headers.get('link')
-    pagesRemaining = linkHeader && linkHeader.includes(`rel=\"next\"`)
+    // eslint-disable-next-line quotes
+    pagesRemaining = linkHeader && linkHeader.includes(`rel="next"`)
     if (pagesRemaining) {
       url = linkHeader.match(nextPattern)[0]
     }
@@ -41,12 +42,12 @@ async function getUsersFetch(url: string, env: Env, users: UserInfo) : Promise<v
 }
 
 async function getUsersFromIssues(repo: string, env: Env, users: UserInfo) : Promise<void> {
-  let url: string = `https://api.github.com/repos/${repo}/issues?&state=all&per_page=100`
+  const url: string = `https://api.github.com/repos/${repo}/issues?&state=all&per_page=100`
   await getUsersFetch(url, env, users)
 }
 
 async function getUsersFromComments(repo: string, env: Env, users: UserInfo) : Promise<void> {
-  let url: string = `https://api.github.com/repos/${repo}/issues/comments?per_page=100`
+  const url: string = `https://api.github.com/repos/${repo}/issues/comments?per_page=100`
   await getUsersFetch(url, env, users)
 }
 
