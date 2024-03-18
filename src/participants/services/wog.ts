@@ -1,10 +1,9 @@
 import { UserInfo } from '../services'
 
-export async function getWog(thread: string, users: UserInfo, options: { wog: string | undefined }) : Promise<void> {
+async function getUsersFetch(thread: string, users: UserInfo) : Promise<void> {
   const postRE: RegExp = new RegExp(/<a class="postuseravatar" href="members\/(?<id>\d+\-(?<name>[^?"]*))[?=\d\w]*" title="[^"]+ ist offline">\s*<img src="(?<avatar>[^"]+)" alt="/g)
   let page: number = 1
   let hasPage: boolean = true
-  const wog: string[] | undefined = options.wog && decodeURI(options.wog).replace(/\[|\]/g, '').split(',')
 
   do {
     let response: Reponse
@@ -30,13 +29,11 @@ export async function getWog(thread: string, users: UserInfo, options: { wog: st
       const match = [...htmlText.matchAll(postRE)]
       if (match && match.length > 0) {
         for (const m of match) {
-          if (typeof wog === 'undefined' || wog.includes(m.groups.name)) {
-            users[m.groups.name] = {
-              name: m.groups.name,
-              link: `https://forum.worldofplayers.de/forum/members/${m.groups.id}`,
-              image: `https://forum.worldofplayers.de/forum/${m.groups.avatar}`,
-              contributions: (users?.[m.groups.name]?.contributions ?? 0) + 1
-            }
+          users[m.groups.name] = {
+            name: m.groups.name,
+            link: `https://forum.worldofplayers.de/forum/members/${m.groups.id}`,
+            image: `https://forum.worldofplayers.de/forum/${m.groups.avatar}`,
+            contributions: (users?.[m.groups.name]?.contributions ?? 0) + 1
           }
         }
       } else {
@@ -44,4 +41,16 @@ export async function getWog(thread: string, users: UserInfo, options: { wog: st
       }
     }
   } while (hasPage)
+}
+
+export async function getWog(thread: string, users: UserInfo, options: { wog: string | undefined }) : Promise<void> {
+  await getUsersFetch(thread, users)
+
+  // Pick selected users only
+  if (typeof options.wog !== 'undefined') {
+    const wog: string[] = decodeURI(options.wog).replace(/\[|\]|\"|\'/g, '').split(',')
+    for (const name of Object.keys(users)) {
+      if (!wog.includes(name)) delete users[name]
+    }
+  }
 }

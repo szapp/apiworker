@@ -17,6 +17,7 @@ router.get('/:project/:service/:svg?', async (request, env, ctx) => {
   const url = new URL(request.url)
   const { wog, exclude, max, columns, size } = Object.fromEntries(url.searchParams)
   const options: Record<string, string | Env | undefined> = { wog, env }
+  if (typeof svg !== 'undefined' && svg !== 'svg') return invalidRoute()
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
@@ -29,7 +30,7 @@ router.get('/:project/:service/:svg?', async (request, env, ctx) => {
 
       // Drop excluded entries
       if (typeof exclude !== 'undefined') {
-        const excl: string[] = decodeURI(exclude).replace(/\[|\]/g, '').split(',')
+        const excl: string[] = decodeURI(exclude).replace(/\[|\]|\"|\'/g, '').split(',')
         for (const name of excl) delete userSet[name]
       }
 

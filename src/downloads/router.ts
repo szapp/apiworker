@@ -12,9 +12,10 @@ function invalidRoute() {
 }
 
 router.get('/:project/:service/:badge?', async (request, env, ctx) => {
-  const { project, service, badge = '' } = request.params
+  const { project, service, badge } = request.params
   const url = new URL(request.url)
   const { label = 'downloads', color = '#4c1', style = 'flat', logo = '', logoColor = '' } = Object.fromEntries(url.searchParams)
+  if (typeof badge !== 'undefined' && badge !== 'badge') return invalidRoute()
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
