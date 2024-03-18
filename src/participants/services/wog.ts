@@ -1,24 +1,25 @@
-import { UserInfo } from '../services'
+import { UserInfo } from '../user-class'
 
-async function getUsersFetch(thread: string, users: UserInfo): Promise<void> {
+async function getUsersFetch(thread: number): Promise<UserInfo> {
   const postRE: RegExp = new RegExp(
     /<a class="postuseravatar" href="members\/(?<id>\d+-(?<name>[^?"]*))[?=\d\w]*" title="[^"]+ ist offline">\s*<img src="(?<avatar>[^"]+)" alt="/g
   )
   let page: number = 1
   let hasPage: boolean = true
+  const users: UserInfo = new UserInfo()
 
   do {
     let response: Response
     try {
-      response = await fetch(new URL(`https://forum.worldofplayers.de/forum/threads/${thread}/page${page}`), {
+      response = (await fetch(new URL(`https://forum.worldofplayers.de/forum/threads/${thread}/page${page}`), {
         method: 'GET',
         headers: {
           Accept: 'text/html',
         },
-      })
+      })) as unknown as Response
     } catch {
       console.warn('Could not reach worldofplayers.de')
-      return
+      break
     }
     hasPage = response?.ok && (page === 1 || response.url.endsWith(String(page)))
     page += 1
@@ -29,30 +30,34 @@ async function getUsersFetch(thread: string, users: UserInfo): Promise<void> {
       if (typeof match !== 'undefined' && match.length > 0) {
         for (const m of match) {
           if (typeof m.groups === 'undefined') continue
-          users[m.groups.name] = {
+          users.add({
             name: m.groups.name,
             link: `https://forum.worldofplayers.de/forum/members/${m.groups.id}`,
             image: `https://forum.worldofplayers.de/forum/${m.groups.avatar}`,
-            contributions: (users?.[m.groups.name]?.contributions ?? 0) + 1,
-          }
+            contributions: 1,
+          })
         }
       } else {
         hasPage = false
       }
     }
   } while (hasPage)
+
+  return users
 }
 
-export async function getWog(thread: string, users: UserInfo, options: { wog: string | undefined }): Promise<void> {
-  await getUsersFetch(thread, users)
+export async function getWog(thread: string, options?: { wog?: string }): Promise<UserInfo> {
+  const users: UserInfo = new UserInfo()
+
+  users.join(await getUsersFetch(Number(thread)))
 
   // Pick selected users only
-  if (typeof options.wog !== 'undefined') {
+  if (typeof options?.wog !== 'undefined') {
     const wog: string[] = decodeURI(options.wog)
       .replace(/\[|\]|"|'/g, '')
       .split(',')
-    for (const name of Object.keys(users)) {
-      if (!wog.includes(name)) delete users[name]
-    }
+    users.filter(wog)
   }
+
+  return users
 }

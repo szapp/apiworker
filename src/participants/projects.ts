@@ -1,4 +1,4 @@
-export const projects: { [key: string]: [number | string] } = {
+export const projects: Record<string, Record<string, string | number | (string | number)[]>> = {
   ninja: {
     github: 'szapp/Ninja',
     wog: 1515286,

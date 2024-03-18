@@ -1,4 +1,4 @@
-export async function getGithub(repo: number | string) {
+export async function getGithub(repo: string) {
   let downloads: number = 0
 
   try {

@@ -1,27 +1,25 @@
 import { getGithub } from './services/github'
 import { getWog } from './services/wog'
+import { UserInfo } from './user-class'
 
-export interface User {
-  name: string
-  link: string
-  image: string
-  contributions: number
+interface Options {
+  wog?: string
+  env: Env
 }
 
-export type UserInfo = Record<[key: string], User>
-
-export const serviceMap: { [key: string]: () => Promise<number> } = {
+export const serviceMap: { [key: string]: (value: string, options: Options) => Promise<UserInfo> } = {
   github: getGithub,
   wog: getWog,
 }
 export const services = Object.keys(serviceMap)
 
 export async function collect(
-  service: () => Promise<void>,
-  values: string[] | string | number[] | number,
-  users: UserInfo,
-  options?: Record<string, string | Env | undefined>
-) {
-  const valueList: string[] | number[] = Array.isArray(values) ? values : [values]
-  for (const value of valueList) await service(value, users, options)
+  service: (value: string, options: Options) => Promise<UserInfo>,
+  values: string | number | (string | number)[],
+  options: Options
+): Promise<UserInfo> {
+  const users: UserInfo = new UserInfo()
+  const valueList = Array.isArray(values) ? values : [values]
+  for (const value of valueList) users.join(await service(String(value), options))
+  return users
 }

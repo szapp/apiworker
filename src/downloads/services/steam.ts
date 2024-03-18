@@ -1,4 +1,4 @@
-export async function getSteam(appId: number | string) {
+export async function getSteam(appId: string) {
   let downloads: number = 0
 
   try {

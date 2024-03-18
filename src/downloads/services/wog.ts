@@ -1,4 +1,4 @@
-export async function getWog(id: number | string) {
+export async function getWog(id: string) {
   let downloads: number = 0
 
   try {

@@ -1,7 +1,8 @@
 import { Router } from 'itty-router'
 import { renderSvg } from './render'
 import { projects } from './projects'
-import { services, serviceMap, collect, User, UserInfo } from './services'
+import { services, serviceMap, collect } from './services'
+import { UserInfo } from './user-class'
 
 const router = Router({ base: '/participants' })
 
@@ -16,16 +17,16 @@ router.get('/:project/:service/:svg?', async (request, env) => {
   const { project, service, svg } = request.params
   const url = new URL(request.url)
   const { wog, exclude, max, columns, size } = Object.fromEntries(url.searchParams)
-  const options: Record<string, string | Env | undefined> = { wog, env }
+  const options = { wog, env }
   if (typeof svg !== 'undefined' && svg !== 'svg') return invalidRoute()
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
-      const userSet: UserInfo = {}
+      const userSet: UserInfo = new UserInfo()
       if (service === 'total') {
-        for (const serv of services) await collect(serviceMap[serv], projects[project][serv], userSet, options)
+        for (const serv of services) userSet.join(await collect(serviceMap[serv], projects[project][serv], options))
       } else {
-        await collect(serviceMap[service], projects[project][service], userSet, options)
+        userSet.join(await collect(serviceMap[service], projects[project][service], options))
       }
 
       // Drop excluded entries
@@ -33,14 +34,15 @@ router.get('/:project/:service/:svg?', async (request, env) => {
         const excl: string[] = decodeURI(exclude)
           .replace(/\[|\]|"|'/g, '')
           .split(',')
-        for (const name of excl) delete userSet[name]
+        userSet.remove(excl)
       }
 
       // Sort
-      const users: User[] = Object.values(userSet).sort((a, b) => b.contributions - a.contributions)
+      const users = userSet.toArray()
 
       if (svg) {
-        const svgData: string = await renderSvg(users, max && Number(max), columns && Number(columns), size && Number(size))
+        const params = [max, columns, size].map((it) => (typeof it !== 'undefined' ? Number(it) : undefined))
+        const svgData: string = await renderSvg(users, ...params)
         return new Response(svgData, { status: 200, headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' } })
       } else {
         return new Response(JSON.stringify(users), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } })
