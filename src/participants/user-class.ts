@@ -36,13 +36,15 @@ export class UserInfo extends Map<string, User> {
     })
   }
   sort(): void {
-    const mergedMaps = new UserInfo([...this.entries()].sort((a, b) => b[1].contributions - a[1].contributions))
+    const newMap = new UserInfo([...this.entries()].sort((a, b) => b[1].contributions - a[1].contributions))
     this.clear()
-    mergedMaps.forEach((value, key) => this.set(key, value))
+    newMap.forEach((value, key) => this.set(key, value))
   }
-  join(other: UserInfo): void {
-    for (const user of other.values()) this.add(user)
-    this.sort()
+  join(...other: UserInfo[]): void {
+    const flat = [...other.map((userMap) => userMap.toArray()), this.toArray()].flat()
+    flat.sort((a, b) => b.contributions - a.contributions)
+    this.clear()
+    flat.forEach((user) => this.add(user))
   }
   toArray(): User[] {
     return Array.from(this.values())

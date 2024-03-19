@@ -21,39 +21,38 @@ export async function renderSvg(users: User[], env: Env, max: number = 100, colu
   const totalWidth: number = (size + gap) * Math.min(numUsers, columns) - gap
   const totalHeight: number = (size + gap) * Math.ceil(numUsers / columns) - gap
 
-  let svg: string = `<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">`
-
-  for (const [idx, user] of users.entries()) {
-    const col: number = idx % columns
-    const row: number = Math.floor(idx / columns)
-    let imageData = placeholder
-    if (user.image.length > 0) {
-      // Use KV to cache images
-      const cacheKey = user.image
-      imageData = await env.KV_USERIMAGES.get(cacheKey, { type: 'text' })
-        .then((value) => {
-          if (value === null || typeof value === 'undefined' || value === '') throw new Error()
-          return value
-        })
-        .catch(async () => {
-          // Fetch and create base64 image
-          const generated = await fetch(new URL(cacheKey))
-            .then(async (response) => {
-              if (!response.ok) return Promise.reject()
-              const arrBuffer: ArrayBuffer = await response.arrayBuffer()
-              const imageString: string = Buffer.from(arrBuffer).toString('base64')
-              const output = `data:${response.headers.get('content-type')};base64,${imageString}`
-              // Cache image for 6 hours
-              await env.KV_USERIMAGES.put(cacheKey, output, { expirationTtl: 21600 })
-                .then(() => console.log(`Cached image ${cacheKey}`))
-                .catch(() => console.log(`Failed to cache image ${cacheKey}`))
-              return output
-            })
-            .catch(() => placeholder)
-          return generated
-        })
-    }
-    svg += `
+  const svgs = await Promise.all(
+    users.map(async (user, idx) => {
+      const col: number = idx % columns
+      const row: number = Math.floor(idx / columns)
+      let imageData = placeholder
+      if (user.image.length > 0) {
+        // Use KV to cache images
+        const cacheKey = user.image
+        imageData = await env.KV_USERIMAGES.get(cacheKey, { type: 'text' })
+          .then((value) => {
+            if (value === null || typeof value === 'undefined' || value === '') throw new Error()
+            return value
+          })
+          .catch(async () => {
+            // Fetch and create base64 image
+            const generated = await fetch(new URL(cacheKey))
+              .then(async (response) => {
+                if (!response.ok) return Promise.reject()
+                const arrBuffer: ArrayBuffer = await response.arrayBuffer()
+                const imageString: string = Buffer.from(arrBuffer).toString('base64')
+                const output = `data:${response.headers.get('content-type')};base64,${imageString}`
+                // Cache image for 6 hours
+                env.KV_USERIMAGES.put(cacheKey, output, { expirationTtl: 21600 })
+                  .then(() => console.log(`Cached image ${cacheKey}`))
+                  .catch(() => console.log(`Failed to cache image ${cacheKey}`))
+                return output
+              })
+              .catch(() => placeholder)
+            return generated
+          })
+      }
+      return `
   <svg x="${col * (size + gap)}" y="${row * (size + gap)}" width="${size}" height="${size}">
     <title>${user.name}</title>
     <a xlink:href="${user.link}">
@@ -65,8 +64,9 @@ export async function renderSvg(users: User[], env: Env, max: number = 100, colu
       </defs>
     </a>
   </svg>`
-  }
-  svg += '</svg>'
+    })
+  )
+  const svg = `<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">${svgs.join('')}</svg>`
 
   return svg
 }

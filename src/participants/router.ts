@@ -22,11 +22,13 @@ router.get('/:project/:service/:svg?', async (request, env) => {
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
-      const userSet: UserInfo = new UserInfo()
+      let userSet: UserInfo
       if (service === 'total') {
-        for (const serv of services) userSet.join(await collect(serviceMap[serv], projects[project][serv], options))
+        const jobs = await Promise.all(services.map((serv) => collect(serviceMap[serv], projects[project][serv], options)))
+        userSet = jobs[0]
+        userSet.join(...jobs.slice(1))
       } else {
-        userSet.join(await collect(serviceMap[service], projects[project][service], options))
+        userSet = await collect(serviceMap[service], projects[project][service], options)
       }
 
       // Drop excluded entries
@@ -37,7 +39,6 @@ router.get('/:project/:service/:svg?', async (request, env) => {
         userSet.remove(excl)
       }
 
-      // Sort
       const users = userSet.toArray()
 
       if (svg) {

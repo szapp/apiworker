@@ -25,7 +25,6 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
   let baseUrl = originalUrl
   do {
     const url = baseUrl + (page > 1 ? `/page${page}` : '')
-    console.log(`Fetching from ${url}`)
     hasPage = await fetch(new URL(url), {
       method: 'GET',
       headers: {
@@ -37,7 +36,6 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
         if (page !== 1 && !response.url.endsWith(String(page))) return false // No more pages
 
         // Update url from redirect
-        console.log(`Redirected? ${response.redirected}`)
         if (url !== response.url) baseUrl = response.url.replace(/\/page\d+$/, '')
 
         const htmlText = await response.text()
@@ -65,7 +63,6 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
           })
           post++
         }
-        console.log(`Fetched ${post} posts from page ${page}: ${matchPosts.length} - ${matchImg.length}`)
         return true
       })
       .catch(() => {
@@ -76,21 +73,17 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
   } while (hasPage)
 
   page--
-  console.log(
-    `Fetched ${originalUrl} up to page ${page} and ${post} posts totalling ${users.size} users with ${users.contributions()} contributions`
-  )
+  console.log(`Fetched ${originalUrl} up to page ${page} and ${post} posts`)
 
   // Store results so far to KV
   const putValue: ArrayBuffer = users.serialize()
-  await env.KV_PARTICIPANTS.put(originalUrl, putValue, { metadata: { page, post } })
+  env.KV_PARTICIPANTS.put(originalUrl, putValue, { metadata: { page, post } }).catch(() => {})
 
   return users
 }
 
 export async function getWog(thread: string, options: { wog?: string; env: Env }): Promise<UserInfo> {
-  const users: UserInfo = new UserInfo()
-
-  users.join(await getUsersFetch(Number(thread), options.env))
+  const users = await getUsersFetch(Number(thread), options.env)
 
   // Pick selected users only
   if (typeof options?.wog !== 'undefined') {

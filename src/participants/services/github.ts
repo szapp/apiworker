@@ -65,11 +65,11 @@ async function getUsersFetch(url: string, env: Env): Promise<UserInfo> {
   } while (pagesRemaining)
 
   const toDate = new Date(latestDate).toISOString()
-  console.log(`Fetched ${url} up to date ${toDate} totalling ${users.size} users with ${users.contributions()} contributions`)
+  console.log(`Fetched ${url} up to date ${toDate}`)
 
   // Store results so far to KV
   const putValue: ArrayBuffer = users.serialize()
-  await env.KV_PARTICIPANTS.put(originalUrl, putValue, { metadata: { date: toDate } })
+  env.KV_PARTICIPANTS.put(originalUrl, putValue, { metadata: { date: toDate } }).catch(() => {})
 
   return users
 }
@@ -105,12 +105,12 @@ async function getContributors(repo: string, env: Env): Promise<string[]> {
 }
 
 export async function getGithub(repo: string, options: { env: Env }): Promise<UserInfo> {
-  const users: UserInfo = new UserInfo()
-
-  users.join(await getUsersFromIssues(repo, options.env))
-  users.join(await getUsersFromComments(repo, options.env))
-
-  const contributors: string[] = await getContributors(repo, options.env)
+  const [users, users1, contributors] = await Promise.all([
+    getUsersFromIssues(repo, options.env),
+    getUsersFromComments(repo, options.env),
+    getContributors(repo, options.env),
+  ])
+  users.join(users1)
   users.remove(contributors)
 
   return users
