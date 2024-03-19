@@ -21,6 +21,7 @@ async function getUsersFetch(url: string, env: Env): Promise<UserInfo> {
 
   const urlExt = new URL(url)
   urlExt.searchParams.set('since', date)
+  urlExt.searchParams.set('per_page', '100')
   url = urlExt.toString()
   let latestDate: number = 0
 
@@ -74,12 +75,12 @@ async function getUsersFetch(url: string, env: Env): Promise<UserInfo> {
 }
 
 async function getUsersFromIssues(repo: string, env: Env): Promise<UserInfo> {
-  const url: string = `https://api.github.com/repos/${repo}/issues?&state=all&per_page=100`
+  const url: string = `https://api.github.com/repos/${repo}/issues?state=all`
   return await getUsersFetch(url, env)
 }
 
 async function getUsersFromComments(repo: string, env: Env): Promise<UserInfo> {
-  const url: string = `https://api.github.com/repos/${repo}/issues/comments?per_page=100`
+  const url: string = `https://api.github.com/repos/${repo}/issues/comments`
   return await getUsersFetch(url, env)
 }
 
