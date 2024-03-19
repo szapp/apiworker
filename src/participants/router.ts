@@ -26,11 +26,19 @@ router.get('/:project/:service/:svg?', async (request, env) => {
     if (typeof wog !== 'undefined') fetchURL.searchParams.set('wog', wog)
     if (typeof exclude !== 'undefined') fetchURL.searchParams.set('exclude', exclude)
     console.log(`Sub-fetching ${fetchURL}`)
-    const users = (await fetch(fetchURL)
-      .then(async (response) => await response.json())
+    const users = (await fetch(fetchURL, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+      },
+    })
+      .then(async (response) => {
+        console.log(await response.clone().text())
+        return await response.json()
+      })
       .catch((e) => {
         console.log(`Sub-fetch failed: ${e}`)
-        return {} as JSON
+        return []
       })) as User[]
     console.log(users.map((i) => i.name))
     if (users.length > 0) {
