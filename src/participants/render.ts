@@ -12,7 +12,7 @@ const image = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100">
 </svg>`
 const placeholder: string = 'data:image/svg+xml;base64,' + Buffer.from(image).toString('base64')
 
-export async function renderSvg(users: User[], max: number = 100, columns: number = 12, size: number = 64): Promise<string> {
+export async function renderSvg(users: User[], env: Env, max: number = 100, columns: number = 12, size: number = 64): Promise<string> {
   max = Math.max(1, Math.min(max, 100))
   const gap: number = 4
   const stroke: number = Math.max(1, size / 64)
@@ -26,10 +26,17 @@ export async function renderSvg(users: User[], max: number = 100, columns: numbe
   for (const [idx, user] of users.entries()) {
     const col: number = idx % columns
     const row: number = Math.floor(idx / columns)
-    const imageData =
-      user.image.length <= 0
-        ? (user.image = placeholder)
-        : await fetch(new URL(user.image))
+    let imageData = placeholder
+    if (user.image.length > 0) {
+      // Use KV to cache images
+      const cacheKey = user.image
+      imageData = await env.KV_USERIMAGES.get(cacheKey, { type: 'text' })
+        .then((value) => {
+          if (value === null || typeof value === 'undefined') throw new Error()
+          return value
+        })
+        .catch(async () => {
+          const value = await fetch(new URL(cacheKey))
             .then(async (response) => {
               if (!response.ok) return Promise.reject()
               const arrBuffer: ArrayBuffer = await response.arrayBuffer()
@@ -37,6 +44,12 @@ export async function renderSvg(users: User[], max: number = 100, columns: numbe
               return `data:${response.headers.get('content-type')};base64,${imageString}`
             })
             .catch(() => placeholder)
+          await env.KV_USERIMAGES.put(cacheKey, value, {})
+            .then(() => console.log(`Cached image ${cacheKey}`))
+            .catch(() => console.log(`Failed to cache image ${cacheKey}`))
+          return value
+        })
+    }
     svg += `
   <svg x="${col * (size + gap)}" y="${row * (size + gap)}" width="${size}" height="${size}">
     <title>${user.name}</title>
