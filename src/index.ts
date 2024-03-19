@@ -13,7 +13,9 @@ export default {
     ) {
       const cacheUrl = new URL(request.url)
       const cacheKey = new Request(cacheUrl.toString(), { method: request.method }) // Global cache only based on URL and method
+      console.log(cacheKey)
       const cache = caches.default
+      console.log(cache)
       let response = await cache.match(cacheKey)
       if (typeof response === 'undefined') {
         console.log(`Response for request url: ${request.url} not present in cache. Fetching and caching request.`)
