@@ -12,7 +12,7 @@ export default {
       url.pathname.startsWith('/participants/')
     ) {
       const cacheUrl = new URL(request.url)
-      const cacheKey = new Request(cacheUrl.toString(), request)
+      const cacheKey = new Request(cacheUrl.toString(), { method: request.method }) // Global cache only based on URL and method
       const cache = caches.default
       let response = await cache.match(cacheKey)
       if (typeof response === 'undefined') {
