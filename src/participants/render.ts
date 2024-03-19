@@ -32,22 +32,25 @@ export async function renderSvg(users: User[], env: Env, max: number = 100, colu
       const cacheKey = user.image
       imageData = await env.KV_USERIMAGES.get(cacheKey, { type: 'text' })
         .then((value) => {
-          if (value === null || typeof value === 'undefined') throw new Error()
+          if (value === null || typeof value === 'undefined' || value === '') throw new Error()
           return value
         })
         .catch(async () => {
-          const value = await fetch(new URL(cacheKey))
+          // Fetch and create base64 image
+          const generated = await fetch(new URL(cacheKey))
             .then(async (response) => {
               if (!response.ok) return Promise.reject()
               const arrBuffer: ArrayBuffer = await response.arrayBuffer()
               const imageString: string = Buffer.from(arrBuffer).toString('base64')
-              return `data:${response.headers.get('content-type')};base64,${imageString}`
+              const output = `data:${response.headers.get('content-type')};base64,${imageString}`
+              // Cache image
+              await env.KV_USERIMAGES.put(cacheKey, output, {})
+                .then(() => console.log(`Cached image ${cacheKey}`))
+                .catch(() => console.log(`Failed to cache image ${cacheKey}`))
+              return output
             })
             .catch(() => placeholder)
-          await env.KV_USERIMAGES.put(cacheKey, value, {})
-            .then(() => console.log(`Cached image ${cacheKey}`))
-            .catch(() => console.log(`Failed to cache image ${cacheKey}`))
-          return value
+          return generated
         })
     }
     svg += `

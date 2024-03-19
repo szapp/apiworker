@@ -8,8 +8,8 @@ interface Options {
 }
 
 export const serviceMap: { [key: string]: (value: string, options: Options) => Promise<UserInfo> } = {
-  github: getGithub,
   wog: getWog,
+  github: getGithub,
 }
 export const services = Object.keys(serviceMap)
 
