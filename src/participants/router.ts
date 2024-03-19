@@ -2,7 +2,7 @@ import { Router } from 'itty-router'
 import { renderSvg } from './render'
 import { projects } from './projects'
 import { services, serviceMap, collect } from './services'
-import { UserInfo } from './user-class'
+import { UserInfo, User } from './user-class'
 
 const router = Router({ base: '/participants' })
 
@@ -19,6 +19,23 @@ router.get('/:project/:service/:svg?', async (request, env) => {
   const { wog, exclude, max, columns, size } = Object.fromEntries(url.searchParams)
   const options = { wog, env }
   if (typeof svg !== 'undefined' && svg !== 'svg') return invalidRoute()
+
+  // Fetch results from catch to avoid exceeding the sub-requests limit
+  if (svg) {
+    const fetchURL = new URL(`${url.origin}/participants/${project}/${service}`)
+    if (typeof wog !== 'undefined') fetchURL.searchParams.set('wog', wog)
+    if (typeof exclude !== 'undefined') fetchURL.searchParams.set('exclude', exclude)
+    console.log(`Sub-fetching ${fetchURL}`)
+    const users = (await fetch(fetchURL)
+      .then((response) => response.json())
+      .catch(() => [])) as User[]
+    if (users.length > 0) {
+      console.log('Responding from sub-request')
+      const params = [max, columns, size].map((it) => (typeof it !== 'undefined' ? Number(it) : undefined))
+      const svgData: string = await renderSvg(users, ...params)
+      return new Response(svgData, { status: 200, headers: { 'Content-Type': 'image/svg+xml' } })
+    }
+  }
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
@@ -43,7 +60,7 @@ router.get('/:project/:service/:svg?', async (request, env) => {
       if (svg) {
         const params = [max, columns, size].map((it) => (typeof it !== 'undefined' ? Number(it) : undefined))
         const svgData: string = await renderSvg(users, ...params)
-        return new Response(svgData, { status: 200, headers: { 'Content-Type': 'image/svg+xml; charset=utf-8' } })
+        return new Response(svgData, { status: 200, headers: { 'Content-Type': 'image/svg+xml' } })
       } else {
         return new Response(JSON.stringify(users), { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8' } })
       }

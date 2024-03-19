@@ -18,9 +18,7 @@ export default {
       if (typeof response === 'undefined') {
         console.log(`Response for request url: ${request.url} not present in cache. Fetching and caching request.`)
         if (url.pathname.startsWith('/downloads')) response = await downloadsRouter.handle(request, env, ctx)
-        else if (url.pathname.startsWith('/participants')) {
-          response = await participantsRouter.handle(request, env, ctx)
-        }
+        else if (url.pathname.startsWith('/participants')) response = await participantsRouter.handle(request, env, ctx)
 
         if (typeof response === 'undefined') {
           response = new Response(JSON.stringify({ message: 'Not Found' }), {
