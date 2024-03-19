@@ -27,8 +27,12 @@ router.get('/:project/:service/:svg?', async (request, env) => {
     if (typeof exclude !== 'undefined') fetchURL.searchParams.set('exclude', exclude)
     console.log(`Sub-fetching ${fetchURL}`)
     const users = (await fetch(fetchURL)
-      .then((response) => response.json())
-      .catch(() => [])) as User[]
+      .then(async (response) => await response.json())
+      .catch((e) => {
+        console.log(`Sub-fetch failed: ${e}`)
+        return {} as JSON
+      })) as User[]
+    console.log(users.map((i) => i.name))
     if (users.length > 0) {
       console.log('Responding from sub-request')
       const params = [max, columns, size].map((it) => (typeof it !== 'undefined' ? Number(it) : undefined))

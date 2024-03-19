@@ -8,8 +8,8 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
   let hasPage: boolean = true
 
   // Retrieve previous results from KV
-  const url: string = `https://forum.worldofplayers.de/forum/threads/${thread}`
-  const { users, fromPage, fromPost } = await env.KV_PARTICIPANTS.getWithMetadata(url, { type: 'arrayBuffer' })
+  const originalUrl: string = `https://forum.worldofplayers.de/forum/threads/${thread}`
+  const { users, fromPage, fromPost } = await env.KV_PARTICIPANTS.getWithMetadata(originalUrl, { type: 'arrayBuffer' })
     .then(({ value, metadata }) => {
       if (value === null || typeof value === 'undefined') throw new Error()
       const users = UserInfo.fromBuffer(value)
@@ -22,9 +22,11 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
     })
   let page: number = fromPage
   let post: number = fromPost
-
+  let baseUrl = originalUrl
   do {
-    hasPage = await fetch(new URL(`https://forum.worldofplayers.de/forum/threads/${thread}/page${page}`), {
+    const url = baseUrl + (page > 1 ? `/page${page}` : '')
+    console.log(`Fetching from ${url}`)
+    hasPage = await fetch(new URL(url), {
       method: 'GET',
       headers: {
         Accept: 'text/html',
@@ -33,6 +35,11 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
       .then(async (response) => {
         if (!response.ok) Promise.reject()
         if (page !== 1 && !response.url.endsWith(String(page))) return false // No more pages
+
+        // Update url from redirect
+        console.log(`Redirected? ${response.redirected}`)
+        if (url !== response.url) baseUrl = response.url.replace(/\/page\d+$/, '')
+
         const htmlText = await response.text()
 
         // Get posts
@@ -70,12 +77,12 @@ async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
 
   page--
   console.log(
-    `Fetched ${url} up to page ${page} and ${post} posts totalling ${users.size} users with ${users.contributions()} contributions`
+    `Fetched ${originalUrl} up to page ${page} and ${post} posts totalling ${users.size} users with ${users.contributions()} contributions`
   )
 
   // Store results so far to KV
   const putValue: ArrayBuffer = users.serialize()
-  await env.KV_PARTICIPANTS.put(url, putValue, { metadata: { page, post } })
+  await env.KV_PARTICIPANTS.put(originalUrl, putValue, { metadata: { page, post } })
 
   return users
 }
