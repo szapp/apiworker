@@ -43,8 +43,8 @@ export async function renderSvg(users: User[], env: Env, max: number = 100, colu
               const arrBuffer: ArrayBuffer = await response.arrayBuffer()
               const imageString: string = Buffer.from(arrBuffer).toString('base64')
               const output = `data:${response.headers.get('content-type')};base64,${imageString}`
-              // Cache image
-              await env.KV_USERIMAGES.put(cacheKey, output, {})
+              // Cache image for 6 hours
+              await env.KV_USERIMAGES.put(cacheKey, output, { expirationTtl: 21600 })
                 .then(() => console.log(`Cached image ${cacheKey}`))
                 .catch(() => console.log(`Failed to cache image ${cacheKey}`))
               return output
