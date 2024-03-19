@@ -21,6 +21,9 @@ export class UserInfo extends Map<string, User> {
       this.set(user.name, user)
     }
   }
+  contributions(): number {
+    return this.toArray().reduce((sum, user) => sum + user.contributions, 0)
+  }
   remove(names: string | string[]): void {
     const delNames = Array.isArray(names) ? names : [names]
     delNames.forEach((name) => this.delete(name))
@@ -43,5 +46,20 @@ export class UserInfo extends Map<string, User> {
   }
   toArray(): User[] {
     return Array.from(this.values())
+  }
+  serialize(): ArrayBuffer {
+    const out = JSON.stringify(this.toArray())
+    return new TextEncoder().encode(out)
+  }
+  deserialize(data: ArrayBuffer): void {
+    const input = new TextDecoder().decode(data)
+    const array = JSON.parse(input)
+    this.clear()
+    for (const user of array) this.add(user)
+  }
+  public static fromBuffer(data: ArrayBuffer): UserInfo {
+    const users = new UserInfo()
+    users.deserialize(data)
+    return users
   }
 }

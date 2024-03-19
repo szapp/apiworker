@@ -1,21 +1,15 @@
 {
   "root": true,
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "prettier"
-  ],
+  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended", "prettier"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": "./tsconfig.json"
   },
-  "plugins": [
-    "@typescript-eslint"
-  ],
+  "plugins": ["@typescript-eslint"],
   "rules": {
     "eqeqeq": 2,
     "no-duplicate-imports": "error",
-    "indent": ["error", 2],
+    "indent": ["error", 2, { "SwitchCase": 1, "ignoredNodes": ["MemberExpression"] }],
     "linebreak-style": ["error", "unix"],
     "quotes": ["error", "single"],
     "semi": ["error", "never"]
@@ -24,4 +18,3 @@
     "node": true
   }
 }
-  

@@ -14,7 +14,7 @@ export default {
       const cacheUrl = new URL(request.url)
       const cacheKey = new Request(cacheUrl.toString(), request)
       const cache = caches.default
-      let response = undefined // await cache.match(cacheKey)
+      let response = await cache.match(cacheKey)
       if (typeof response === 'undefined') {
         console.log(`Response for request url: ${request.url} not present in cache. Fetching and caching request.`)
         if (url.pathname.startsWith('/downloads')) response = await downloadsRouter.handle(request, env, ctx)

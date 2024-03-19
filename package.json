@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "lint": "eslint src/**/* --ext .js,.jsx,.ts,.tsx",
-    "format": "prettier --write src/**/* --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write src/**/*",
     "deploy": "wrangler deploy",
     "dev": "wrangler dev",
     "start": "wrangler dev"

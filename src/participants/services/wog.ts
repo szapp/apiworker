@@ -1,55 +1,89 @@
 import { UserInfo } from '../user-class'
 
-async function getUsersFetch(thread: number): Promise<UserInfo> {
-  const postRE: RegExp = new RegExp(
-    /<a class="postuseravatar" href="members\/(?<id>\d+-(?<name>[^?"]*))[?=\d\w]*" title="[^"]+ ist offline">\s*<img src="(?<avatar>[^"]+)" alt="/g
-  )
-  let page: number = 1
+const avatarRE: RegExp =
+  /<a\s+class="postuseravatar"\s+href="members\/(?<id>\d+-(?<name>[^?"]*))[?=\d\w]*"\s+title="[^"]+">\s*<img src="(?<avatar>[^"]+)"/g
+const postRE: RegExp = /<a\s+class="username\s+(offline|online)\s+popupctrl"\s+href="members\/(?<id>\d+-(?<name>[^?"]*))[?=\d\w]*"\s+/g
+
+async function getUsersFetch(thread: number, env: Env): Promise<UserInfo> {
   let hasPage: boolean = true
-  const users: UserInfo = new UserInfo()
+
+  // Retrieve previous results from KV
+  const url: string = `https://forum.worldofplayers.de/forum/threads/${thread}`
+  const { users, fromPage, fromPost } = await env.KV_PARTICIPANTS.getWithMetadata(url, { type: 'arrayBuffer' })
+    .then(({ value, metadata }) => {
+      if (value === null || typeof value === 'undefined') throw new Error()
+      const users = UserInfo.fromBuffer(value)
+      const { page, post } = metadata as { page: number; post: number }
+      return { users, fromPage: page, fromPost: post }
+    })
+    .catch(() => {
+      console.log('No KV entry found or invalid data')
+      return { users: new UserInfo(), fromPage: 1, fromPost: 0 }
+    })
+  let page: number = fromPage
+  let post: number = fromPost
 
   do {
-    let response: Response
-    try {
-      response = (await fetch(new URL(`https://forum.worldofplayers.de/forum/threads/${thread}/page${page}`), {
-        method: 'GET',
-        headers: {
-          Accept: 'text/html',
-        },
-      })) as unknown as Response
-    } catch {
-      console.warn('Could not reach worldofplayers.de')
-      break
-    }
-    hasPage = response?.ok && (page === 1 || response.url.endsWith(String(page)))
-    page += 1
+    hasPage = await fetch(new URL(`https://forum.worldofplayers.de/forum/threads/${thread}/page${page}`), {
+      method: 'GET',
+      headers: {
+        Accept: 'text/html',
+      },
+    })
+      .then(async (response) => {
+        if (!response.ok) Promise.reject()
+        if (page !== 1 && !response.url.endsWith(String(page))) return false // No more pages
+        const htmlText = await response.text()
 
-    if (hasPage) {
-      const htmlText = await response.text()
-      const match = [...htmlText.matchAll(postRE)]
-      if (typeof match !== 'undefined' && match.length > 0) {
-        for (const m of match) {
-          if (typeof m.groups === 'undefined') continue
+        // Get posts
+        post = 0
+        const matchPosts = [...htmlText.matchAll(postRE)]
+        if (matchPosts.length <= 0) return false
+
+        // Get images
+        const matchImg = [...htmlText.matchAll(avatarRE)]
+        const images = new Map<string, string>(
+          matchImg.filter((m) => typeof m.groups !== 'undefined').map((m) => [m.groups!.name, m.groups!.avatar])
+        )
+
+        // Add users
+        post = page === fromPage ? fromPost : 0
+        for (const { groups: user } of matchPosts.slice(post)) {
+          if (typeof user === 'undefined') continue
           users.add({
-            name: m.groups.name,
-            link: `https://forum.worldofplayers.de/forum/members/${m.groups.id}`,
-            image: `https://forum.worldofplayers.de/forum/${m.groups.avatar}`,
+            name: user.name,
+            link: `https://forum.worldofplayers.de/forum/members/${user.id}`,
+            image: images.get(user.name) ? 'https://forum.worldofplayers.de/forum/' + images.get(user.name) : '',
             contributions: 1,
           })
+          post++
         }
-      } else {
-        hasPage = false
-      }
-    }
+        console.log(`Fetched ${post} posts from page ${page}: ${matchPosts.length} - ${matchImg.length}`)
+        return true
+      })
+      .catch(() => {
+        console.warn('Could not reach worldofplayers.de')
+        return false
+      })
+    if (hasPage) page++
   } while (hasPage)
+
+  page--
+  console.log(
+    `Fetched ${url} up to page ${page} and ${post} posts totalling ${users.size} users with ${users.contributions()} contributions`
+  )
+
+  // Store results so far to KV
+  const putValue: ArrayBuffer = users.serialize()
+  await env.KV_PARTICIPANTS.put(url, putValue, { metadata: { page, post } })
 
   return users
 }
 
-export async function getWog(thread: string, options?: { wog?: string }): Promise<UserInfo> {
+export async function getWog(thread: string, options: { wog?: string; env: Env }): Promise<UserInfo> {
   const users: UserInfo = new UserInfo()
 
-  users.join(await getUsersFetch(Number(thread)))
+  users.join(await getUsersFetch(Number(thread), options.env))
 
   // Pick selected users only
   if (typeof options?.wog !== 'undefined') {
