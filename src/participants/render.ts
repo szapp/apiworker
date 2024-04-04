@@ -34,9 +34,9 @@ export async function renderSvg(users: User[], env: Env, max: number = 100, colu
             if (value === null || typeof value === 'undefined' || value === '') throw new Error()
             return value
           })
-          .catch(async () => {
-            // Fetch and create base64 image
-            const generated = await fetch(new URL(cacheKey))
+          // Fetch and create base64 image
+          .catch(() =>
+            fetch(new URL(cacheKey))
               .then(async (response) => {
                 if (!response.ok) return Promise.reject()
                 const arrBuffer: ArrayBuffer = await response.arrayBuffer()
@@ -49,8 +49,7 @@ export async function renderSvg(users: User[], env: Env, max: number = 100, colu
                 return output
               })
               .catch(() => placeholder)
-            return generated
-          })
+          )
       }
       return `
   <svg x="${col * (size + gap)}" y="${row * (size + gap)}" width="${size}" height="${size}">

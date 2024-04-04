@@ -17,9 +17,7 @@ export async function collect(
   service: (value: string, options: Options) => Promise<UserInfo>,
   values: string | number | (string | number)[],
   options: Options
-): Promise<UserInfo> {
-  const users: UserInfo = new UserInfo()
+): Promise<UserInfo[]> {
   const valueList = Array.isArray(values) ? values : [values]
-  for (const value of valueList) users.join(await service(String(value), options))
-  return users
+  return Promise.all(valueList.map((value) => service(String(value), options)))
 }

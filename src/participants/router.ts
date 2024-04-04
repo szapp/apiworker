@@ -2,7 +2,6 @@ import { Router } from 'itty-router'
 import { renderSvg } from './render'
 import { projects } from './projects'
 import { services, serviceMap, collect } from './services'
-import { UserInfo } from './user-class'
 
 const router = Router({ base: '/participants' })
 
@@ -22,14 +21,9 @@ router.get('/:project/:service/:svg?', async (request, env) => {
 
   if (project in projects) {
     if (service in projects[project] || service === 'total') {
-      let userSet: UserInfo
-      if (service === 'total') {
-        const jobs = await Promise.all(services.map((serv) => collect(serviceMap[serv], projects[project][serv], options)))
-        userSet = jobs[0]
-        userSet.join(...jobs.slice(1))
-      } else {
-        userSet = await collect(serviceMap[service], projects[project][service], options)
-      }
+      const selServices: string[] = service === 'total' ? services : [service]
+      const [userSet, ...jobs] = (await Promise.all(selServices.map((s) => collect(serviceMap[s], projects[project][s], options)))).flat()
+      userSet.join(...jobs)
 
       // Drop excluded entries
       if (typeof exclude !== 'undefined') {
@@ -54,7 +48,7 @@ router.get('/:project/:service/:svg?', async (request, env) => {
   return invalidRoute()
 })
 
-router.get('/', async (request) => {
+router.get('/', (request) => {
   const url = new URL(request.url)
   return new Response(
     JSON.stringify({

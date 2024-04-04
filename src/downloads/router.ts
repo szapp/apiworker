@@ -59,7 +59,7 @@ router.get('/:project/:service/:badge?', async (request) => {
   return invalidRoute()
 })
 
-router.get('/', async (request) => {
+router.get('/', (request) => {
   const url = new URL(request.url)
   return new Response(
     JSON.stringify({

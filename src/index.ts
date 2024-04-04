@@ -47,6 +47,13 @@ export default {
       )
     }
 
+    if (url.pathname === '/favicon.ico') {
+      return new Response('<svg width="0" height="0" xmlns="http://www.w3.org/2000/svg" fill="none"></svg>', {
+        status: 200,
+        headers: { 'Content-Type': 'image/svg+xml' },
+      })
+    }
+
     return new Response(JSON.stringify({ message: 'Not Found' }), {
       status: 404,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
