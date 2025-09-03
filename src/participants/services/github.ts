@@ -16,7 +16,7 @@ async function getUsersFetch(url: string, env: Env): Promise<UserInfo> {
     })
     .catch(() => {
       console.log('No KV entry found or invalid data')
-      return { users: new UserInfo(), date: '1970-01-01T00:00:00Z' }
+      return { users: new UserInfo(), date: '1970-01-02T00:00:00Z' }
     })
 
   const urlExt = new URL(url)
